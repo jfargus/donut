@@ -13,7 +13,7 @@ seed: 2022
 lr: 3e-5
 warmup_steps: 300
 num_training_samples_per_epoch: 800
-max_epochs: 15
+max_epochs: 10
 max_steps: -1
 num_workers: 8
 val_check_interval: 1.0
