@@ -1,0 +1,22 @@
+resume_from_checkpoint_path: null
+result_path: "./result"
+pretrained_model_name_or_path: "jfargus/donut_w9_base_v2"
+dataset_name_or_paths: ["jfargus/w9_cord_v5"]
+sort_json_key: false
+train_batch_sizes: [4]
+val_batch_sizes: [1]
+input_size: [960, 640]
+max_length: 768
+align_long_axis: false
+num_nodes: 1
+seed: 2022
+lr: 3e-5
+warmup_steps: 300
+num_training_samples_per_epoch: 800
+max_epochs: 15
+max_steps: -1
+num_workers: 8
+val_check_interval: 1.0
+check_val_every_n_epoch: 2
+gradient_clip_val: 1.0
+verbose: true
