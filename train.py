@@ -143,7 +143,7 @@ def train(config):
     trainer = pl.Trainer(
         num_nodes=config.get("num_nodes", 1),
         devices=torch.cuda.device_count(),
-        strategy="ddp",
+        #strategy="ddp",
         accelerator="gpu",
         plugins=custom_ckpt,
         max_epochs=config.max_epochs,
