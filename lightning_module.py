@@ -96,12 +96,12 @@ class DonutModelPLModule(pl.LightningModule):
         self.validation_step_outputs[dataloader_idx].append(scores)
 
         return scores
-
     def on_validation_epoch_end(self):
         assert len(self.validation_step_outputs) == self.num_of_loaders
         cnt = [0] * self.num_of_loaders
         total_metric = [0] * self.num_of_loaders
         val_metric = [0] * self.num_of_loaders
+    
         for i, results in enumerate(self.validation_step_outputs):
             for scores in results:
                 cnt[i] += len(scores)
@@ -109,7 +109,12 @@ class DonutModelPLModule(pl.LightningModule):
             val_metric[i] = total_metric[i] / cnt[i]
             val_metric_name = f"val_metric_{i}th_dataset"
             self.log_dict({val_metric_name: val_metric[i]}, sync_dist=True)
-        self.log_dict({"val_metric": np.sum(total_metric) / np.sum(cnt)}, sync_dist=True)
+    
+        avg_normed_ed = np.sum(total_metric) / np.sum(cnt)
+        self.log_dict({"val_metric": avg_normed_ed}, sync_dist=True)
+    
+        if self.config.get("verbose", False):
+            self.print(f"\n Avg NormED across all validation sets: {avg_normed_ed:.4f}\n")
 
     def configure_optimizers(self):
 
