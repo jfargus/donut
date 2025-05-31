@@ -1,3 +1,4 @@
+Hi everyone. I fixed Donut's dependencies to work with python 3.10 as of 3/31/2025. It didn't work for me otherwise. This version will also work inside Colab for training. I can't believe the donut team never fixed any of this stuff but I'm grateful for all the work they put into the original tech. It is amazing. 
 <div align="center">
     
 # Donut 🍩 : Document Understanding Transformer
