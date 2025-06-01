@@ -1,7 +1,7 @@
 resume_from_checkpoint_path: null
 result_path: "./result"
-pretrained_model_name_or_path: "jfargus/donut_w9_base_v2"
-dataset_name_or_paths: ["jfargus/w9_cord_v5"]
+pretrained_model_name_or_path: "naver-clova-ix/donut-base"
+dataset_name_or_paths: ["jfargus/w9_cord_v7"]
 sort_json_key: false
 train_batch_sizes: [4]
 val_batch_sizes: [1]
