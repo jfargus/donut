@@ -178,6 +178,21 @@ def create_filtered_dataset(dataset_name_or_path, split, filters, model_module, 
         base_dataset.dataset = base_dataset.dataset.select(selected_indices)
         print(f"Final {split} dataset size: {len(base_dataset.dataset)} examples")
     
+    # Critical fix: Update all dataset size attributes to reflect the filtered dataset
+    final_size = len(base_dataset.dataset)
+    base_dataset.dataset_length = final_size
+    
+    # Override the __len__ method to return the correct size
+    original_len = base_dataset.__len__
+    base_dataset.__len__ = lambda: final_size
+    
+    # Update any other size-related attributes that might exist
+    for attr in ['num_training_samples', 'length', 'size']:
+        if hasattr(base_dataset, attr):
+            setattr(base_dataset, attr, final_size)
+    
+    print(f"DonutDataset created with final size: {final_size}")
+    
     return base_dataset
 
 
