@@ -1,7 +1,7 @@
 resume_from_checkpoint_path: null
 result_path: "./result"
 pretrained_model_name_or_path: "naver-clova-ix/donut-base"
-dataset_name_or_paths: ["jfargus/w9_cord_v7"]
+dataset_name_or_paths: ["jfargus/w9_cord_complete"]
 sort_json_key: false
 train_batch_sizes: [4]
 val_batch_sizes: [1]
@@ -19,6 +19,7 @@ val_check_interval: 1.0
 check_val_every_n_epoch: 2
 gradient_clip_val: 1.0
 verbose: true
+task_name: "w9_cord"
 # Force using only train split for both training and validation
 # This is useful when you want to filter the same split differently
 force_train_split_only: true
