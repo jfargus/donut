@@ -92,6 +92,27 @@ class DonutDataset(Dataset):
 
     def __len__(self) -> int:
         return self.dataset_length
+    
+    def _rebuild_gt_token_sequences(self):
+        """Rebuilds gt_token_sequences from current dataset"""
+        self.gt_token_sequences = []
+        for sample in self.dataset:
+            ground_truth = json.loads(sample["ground_truth"])
+            if "gt_parses" in ground_truth:
+                gt_jsons = ground_truth["gt_parses"]
+            else:
+                gt_jsons = [ground_truth["gt_parse"]]
+            token_seqs = [
+                self.task_start_token
+                + self.donut_model.json2token(
+                    gt_json,
+                    update_special_tokens_for_json_key=self.split == "train",
+                    sort_json_key=self.sort_json_key,
+                )
+                + self.donut_model.decoder.tokenizer.eos_token
+                for gt_json in gt_jsons
+            ]
+            self.gt_token_sequences.append(token_seqs)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """

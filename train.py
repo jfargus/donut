@@ -165,6 +165,7 @@ def create_filtered_dataset(dataset_name_or_path, split, filters, model_module, 
         print(f"Applying filters to {split} split: {filters}")
         original_size = len(base_dataset.dataset)
         base_dataset.dataset = filter_dataset_by_metadata(base_dataset.dataset, filters)
+        base_dataset._rebuild_gt_token_sequences()
         filtered_size = len(base_dataset.dataset)
         print(f"Dataset {split} split filtered from {original_size} to {filtered_size} examples")
     
@@ -176,6 +177,7 @@ def create_filtered_dataset(dataset_name_or_path, split, filters, model_module, 
         random.shuffle(indices)
         selected_indices = indices[:max_samples]
         base_dataset.dataset = base_dataset.dataset.select(selected_indices)
+        base_dataset._rebuild_gt_token_sequences()
         print(f"Final {split} dataset size: {len(base_dataset.dataset)} examples")
     
     # Critical fix: Update all dataset size attributes to reflect the filtered dataset
