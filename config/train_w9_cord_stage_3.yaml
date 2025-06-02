@@ -2,8 +2,8 @@ resume_from_checkpoint_path: null
 result_path: "./result"
 pretrained_model_name_or_path: "naver-clova-ix/donut-base"
 dataset_name_or_paths: ["jfargus/w9_cord_complete"]
-sort_json_key: false
-train_batch_sizes: [4]
+sort_json_key: true
+train_batch_sizes: [2]
 val_batch_sizes: [1]
 input_size: [960, 640]
 max_length: 128
@@ -32,8 +32,7 @@ val_size_limit_percent: 0.1
 # These will be applied to the train split used for training
 train_filters:
   # Filter by metadata fields using dot notation
-  meta.print_type: ["typed","handwritten"]                 # Only typed documents
-  meta.augmented: [true,false]                    # Only non-augmented images
+  meta.print_type: ["typed","handwritten"]                 # Only typed documents               # Only non-augmented images
   meta.font: ["arial", "cour","davyscrappywrit","homemadeapple","qeantonylark","qecarolinemutiboko","qebradenhill","qecarolinemutiboko","qedavidreidcap","qeherbertcooper"]
 
 # Validation dataset filters  
@@ -41,5 +40,4 @@ train_filters:
 # The validation set will be automatically limited to 10% of training set size
 val_filters:
   meta.print_type: ["typed","handwritten"]                 # Only typed documents
-  meta.augmented: [true,false]                   # Only non-augmented images
   meta.font: ["helvetica", "calibri","qephillips","qeruthstafford","qetonyflores","reeniebeanie"]              
