@@ -268,6 +268,7 @@ def train(config):
                 prompt_end_token=prompt_end_token,
                 max_samples=max_val_size
             )
+            val_dataset.split = "validation" 
             datasets["validation"].append(val_dataset)
             
         else:
