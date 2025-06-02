@@ -77,6 +77,110 @@ def set_seed(seed):
         lightning_fabric.utilities.seed.seed_everything(seed, workers=True)
 
 
+def filter_dataset_by_metadata(dataset, filters):
+    """
+    Filter dataset based on metadata fields in the ground_truth column.
+    
+    Args:
+        dataset: HuggingFace dataset
+        filters: Dict with filter conditions
+        
+    Returns:
+        Filtered dataset
+    """
+    if not filters:
+        return dataset
+    
+    def meets_filter_criteria(example):
+        try:
+            # Parse the ground_truth JSON if it's a string
+            if isinstance(example['ground_truth'], str):
+                gt_data = json.loads(example['ground_truth'])
+            else:
+                gt_data = example['ground_truth']
+            
+            meta = gt_data.get('meta', {})
+            
+            # Check each filter condition
+            for field_path, expected_value in filters.items():
+                # Support nested field access with dot notation (e.g., "meta.version")
+                field_parts = field_path.split('.')
+                current_data = gt_data
+                
+                # Navigate through nested structure
+                for part in field_parts:
+                    if isinstance(current_data, dict) and part in current_data:
+                        current_data = current_data[part]
+                    else:
+                        return False  # Field not found
+                
+                # Check if the value matches
+                if isinstance(expected_value, list):
+                    # If expected_value is a list, check if current_data is in the list
+                    if current_data not in expected_value:
+                        return False
+                else:
+                    # Direct comparison
+                    if current_data != expected_value:
+                        return False
+            
+            return True
+            
+        except (json.JSONDecodeError, KeyError, TypeError):
+            return False
+    
+    return dataset.filter(meets_filter_criteria)
+
+
+def create_filtered_dataset(dataset_name_or_path, split, filters, model_module, config, task_start_token, prompt_end_token, max_samples=None):
+    """
+    Create a DonutDataset with optional filtering based on metadata.
+    
+    Args:
+        dataset_name_or_path: Path or name of the dataset
+        split: Dataset split ('train' or 'validation')
+        filters: Dictionary of filter conditions
+        model_module: Donut model module
+        config: Configuration object
+        task_start_token: Task start token
+        prompt_end_token: Prompt end token
+        max_samples: Maximum number of samples to include (for validation size limiting)
+        
+    Returns:
+        DonutDataset instance
+    """
+    # Create the base dataset
+    base_dataset = DonutDataset(
+        dataset_name_or_path=dataset_name_or_path,
+        donut_model=model_module.model,
+        max_length=config.max_length,
+        split=split,
+        task_start_token=task_start_token,
+        prompt_end_token=prompt_end_token,
+        sort_json_key=config.sort_json_key,
+    )
+    
+    # Apply filtering if specified
+    if filters:
+        print(f"Applying filters to {split} split: {filters}")
+        original_size = len(base_dataset.dataset)
+        base_dataset.dataset = filter_dataset_by_metadata(base_dataset.dataset, filters)
+        filtered_size = len(base_dataset.dataset)
+        print(f"Dataset {split} split filtered from {original_size} to {filtered_size} examples")
+    
+    # Apply sample size limiting if specified (for validation set)
+    if max_samples is not None and len(base_dataset.dataset) > max_samples:
+        print(f"Limiting {split} dataset from {len(base_dataset.dataset)} to {max_samples} samples")
+        # Shuffle and select random subset
+        indices = list(range(len(base_dataset.dataset)))
+        random.shuffle(indices)
+        selected_indices = indices[:max_samples]
+        base_dataset.dataset = base_dataset.dataset.select(selected_indices)
+        print(f"Final {split} dataset size: {len(base_dataset.dataset)} examples")
+    
+    return base_dataset
+
+
 def train(config):
     set_seed(config.get("seed", 42))
 
@@ -85,8 +189,19 @@ def train(config):
 
     # add datasets to data_module
     datasets = {"train": [], "validation": []}
+    
+    # Get filtering configurations
+    train_filters = config.get("train_filters", {})
+    val_filters = config.get("val_filters", {})
+    
+    # Get validation size limit configuration
+    val_size_limit_percent = config.get("val_size_limit_percent", 0.1)  # Default 10%
+    
+    # Get split configurations - allow forcing to use only train split
+    force_train_only = config.get("force_train_split_only", False)
+    
     for i, dataset_name_or_path in enumerate(config.dataset_name_or_paths):
-        task_name = config.get("task_name", os.path.basename(dataset_name_or_path))  # e.g., cord-v2, docvqa, rvlcdip, ...
+        task_name = config.get("task_name", os.path.basename(dataset_name_or_path))
         
         # add categorical special tokens (optional)
         if task_name == "rvlcdip":
@@ -98,24 +213,76 @@ def train(config):
             ])
         if task_name == "docvqa":
             model_module.model.decoder.add_special_tokens(["<yes/>", "<no/>"])
-            
-        for split in ["train", "validation"]:
-            datasets[split].append(
-                DonutDataset(
-                    dataset_name_or_path=dataset_name_or_path,
-                    donut_model=model_module.model,
-                    max_length=config.max_length,
-                    split=split,
-                    task_start_token=config.task_start_tokens[i]
-                    if config.get("task_start_tokens", None)
-                    else f"<s_{task_name}>",
-                    prompt_end_token="<s_answer>" if "docvqa" in dataset_name_or_path else f"<s_{task_name}>",
-                    sort_json_key=config.sort_json_key,
-                )
+        
+        # Determine task start and prompt end tokens
+        task_start_token = (config.task_start_tokens[i] 
+                           if config.get("task_start_tokens", None) 
+                           else f"<s_{task_name}>")
+        prompt_end_token = ("<s_answer>" if "docvqa" in dataset_name_or_path 
+                           else f"<s_{task_name}>")
+        
+        # Create training dataset
+        if force_train_only:
+            # Use train split for both training and validation with different filters
+            train_dataset = create_filtered_dataset(
+                dataset_name_or_path=dataset_name_or_path,
+                split="train",
+                filters=train_filters,
+                model_module=model_module,
+                config=config,
+                task_start_token=task_start_token,
+                prompt_end_token=prompt_end_token
             )
-            # prompt_end_token is used for ignoring a given prompt in a loss function
-            # for docvqa task, i.e., {"question": {used as a prompt}, "answer": {prediction target}},
-            # set prompt_end_token to "<s_answer>"
+            datasets["train"].append(train_dataset)
+            
+            # Calculate validation size limit based on training dataset size
+            train_size = len(train_dataset.dataset)
+            max_val_size = max(1, int(train_size * val_size_limit_percent))
+            print(f"Training dataset size: {train_size}, limiting validation to {max_val_size} samples ({val_size_limit_percent*100}%)")
+            
+            # Create validation dataset from train split with different filters and size limit
+            val_dataset = create_filtered_dataset(
+                dataset_name_or_path=dataset_name_or_path,
+                split="train",  # Using train split for validation too
+                filters=val_filters,
+                model_module=model_module,
+                config=config,
+                task_start_token=task_start_token,
+                prompt_end_token=prompt_end_token,
+                max_samples=max_val_size
+            )
+            datasets["validation"].append(val_dataset)
+            
+        else:
+            # Use separate train and validation splits
+            train_datasets_for_size_calc = []  # Track train datasets for size calculation
+            
+            for split in ["train", "validation"]:
+                filters = train_filters if split == "train" else val_filters
+                max_samples = None  # No limit for train split initially
+                
+                if split == "validation":
+                    # Calculate validation size limit based on total training dataset size
+                    total_train_size = sum(len(ds.dataset) for ds in train_datasets_for_size_calc)
+                    max_samples = max(1, int(total_train_size * val_size_limit_percent))
+                    print(f"Total training dataset size: {total_train_size}, limiting validation to {max_samples} samples ({val_size_limit_percent*100}%)")
+                
+                dataset = create_filtered_dataset(
+                    dataset_name_or_path=dataset_name_or_path,
+                    split=split,
+                    filters=filters,
+                    model_module=model_module,
+                    config=config,
+                    task_start_token=task_start_token,
+                    prompt_end_token=prompt_end_token,
+                    max_samples=max_samples
+                )
+                
+                datasets[split].append(dataset)
+                
+                if split == "train":
+                    train_datasets_for_size_calc.append(dataset)
+
     data_module.train_datasets = datasets["train"]
     data_module.val_datasets = datasets["validation"]
 

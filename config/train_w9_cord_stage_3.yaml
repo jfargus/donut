@@ -1,0 +1,44 @@
+resume_from_checkpoint_path: null
+result_path: "./result"
+pretrained_model_name_or_path: "naver-clova-ix/donut-base"
+dataset_name_or_paths: ["jfargus/w9_cord_v7"]
+sort_json_key: false
+train_batch_sizes: [4]
+val_batch_sizes: [1]
+input_size: [960, 640]
+max_length: 128
+align_long_axis: false
+num_nodes: 1
+seed: 86
+lr: 1e-5
+warmup_steps: 100
+max_epochs: 14
+max_steps: -1
+num_workers: 8
+val_check_interval: 1.0
+check_val_every_n_epoch: 2
+gradient_clip_val: 1.0
+verbose: true
+# Force using only train split for both training and validation
+# This is useful when you want to filter the same split differently
+force_train_split_only: true
+
+# Validation dataset size limit as percentage of training dataset
+# Default is 0.1 (10% of training dataset size)
+val_size_limit_percent: 0.1
+
+# Training dataset filters
+# These will be applied to the train split used for training
+train_filters:
+  # Filter by metadata fields using dot notation
+  meta.print_type: ["typed","handwritten"]                 # Only typed documents
+  meta.augmented: [true,false]                    # Only non-augmented images
+  meta.font: ["arial", "cour","davyscrappywrit","homemadeapple","qeantonylark","qecarolinemutiboko","qebradenhill","qecarolinemutiboko","qedavidreidcap","qeherbertcooper"]
+
+# Validation dataset filters  
+# These will be applied to create validation set from train split
+# The validation set will be automatically limited to 10% of training set size
+val_filters:
+  meta.print_type: ["typed","handwritten"]                 # Only typed documents
+  meta.augmented: [true,false]                   # Only non-augmented images
+  meta.font: ["helvetica", "calibri","qephillips","qeruthstafford","qetonyflores","reeniebeanie"]              
