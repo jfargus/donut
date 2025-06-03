@@ -583,6 +583,7 @@ class DonutModel(PreTrainedModel):
     def from_pretrained(
         cls,
         pretrained_model_name_or_path: Union[str, bytes, os.PathLike],
+        branch = "official",
         *model_args,
         **kwargs,
     ):
@@ -594,11 +595,7 @@ class DonutModel(PreTrainedModel):
                 Name of a pretrained model name either registered in huggingface.co. or saved in local,
                 e.g., `naver-clova-ix/donut-base`, or `naver-clova-ix/donut-base-finetuned-rvlcdip`
         """
-        try:
-            model = super(DonutModel, cls).from_pretrained(pretrained_model_name_or_path, revision="official", *model_args, **kwargs)
-        except:
-            
-            model = super(DonutModel, cls).from_pretrained(pretrained_model_name_or_path, revision="main", *model_args, **kwargs)
+        model = super(DonutModel, cls).from_pretrained(pretrained_model_name_or_path, revision=branch, *model_args, **kwargs)
 
         # truncate or interplolate position embeddings of donut decoder
         max_length = kwargs.get("max_length", model.config.max_position_embeddings)
