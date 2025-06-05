@@ -13,6 +13,7 @@ import random
 import numpy as np
 import cv2
 from PIL import Image as PILImage
+import os
 
 def get_random_pexels_image(query="texture", orientation="landscape", size=(720, 960),api_key=None):
     headers = {"Authorization": api_key}
@@ -44,6 +45,8 @@ def get_random_pexels_image(query="texture", orientation="landscape", size=(720,
     return img
 
 def generate_stamps(stamp_amount = 40, output_dir = "/content/stamps", api_key= None):
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"Generating {stamp_amount} random Pexels images in {output_dir}...")
     for i in range(stamp_amount):
         img = get_random_pexels_image(query="grunge texture", size=(100, 100),api_key=api_key)
         cv2.imwrite(f"{output_dir}/pexels_texture_{i}.jpg", img)

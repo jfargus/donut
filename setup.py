@@ -58,6 +58,7 @@ setup(
         "sentencepiece",
         "zss",
         "sconf>=0.2.3",
+        "augraphy"
     ],
     classifiers=[
         "Intended Audience :: Developers",
