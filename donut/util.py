@@ -50,6 +50,8 @@ class DonutDataset(Dataset):
         task_start_token: str = "<s>",
         prompt_end_token: str = None,
         sort_json_key: bool = True,
+        augment: bool = False,             # ← NEW
+        augment_prob: float = 0.5          # ← NEW
     ):
         super().__init__()
 
@@ -92,27 +94,6 @@ class DonutDataset(Dataset):
 
     def __len__(self) -> int:
         return self.dataset_length
-    
-    def _rebuild_gt_token_sequences(self):
-        """Rebuilds gt_token_sequences from current dataset"""
-        self.gt_token_sequences = []
-        for sample in self.dataset:
-            ground_truth = json.loads(sample["ground_truth"])
-            if "gt_parses" in ground_truth:
-                gt_jsons = ground_truth["gt_parses"]
-            else:
-                gt_jsons = [ground_truth["gt_parse"]]
-            token_seqs = [
-                self.task_start_token
-                + self.donut_model.json2token(
-                    gt_json,
-                    update_special_tokens_for_json_key=self.split == "train",
-                    sort_json_key=self.sort_json_key,
-                )
-                + self.donut_model.decoder.tokenizer.eos_token
-                for gt_json in gt_jsons
-            ]
-            self.gt_token_sequences.append(token_seqs)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -127,7 +108,18 @@ class DonutDataset(Dataset):
         sample = self.dataset[idx]
 
         # input_tensor
-        input_tensor = self.donut_model.encoder.prepare_input(sample["image"], random_padding=self.split == "train")
+        from augmentations import augment_example  # Make sure this import is at the top if not already
+
+        image = sample["image"]
+
+        # Apply augmentation with probability if enabled
+        if self.augment and self.split == "train" and random.random() < self.augment_prob:
+            if isinstance(image, str):
+                from PIL import Image
+                image = Image.open(image).convert("RGB")
+            image = augment_example({"image": image})["image"]
+
+        input_tensor = self.donut_model.encoder.prepare_input(image, random_padding=self.split == "train")
 
         # input_ids
         processed_parse = random.choice(self.gt_token_sequences[idx])  # can be more than one, e.g., DocVQA Task 1
