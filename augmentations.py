@@ -62,11 +62,11 @@ def get_aug():
   augraphy_pipeline = AugraphyPipeline(
     [
         #PatternGenerator(p=0.3),
-        Scribbles(p=0.5),
-        BrightnessTexturize(p=.7),
-        PageBorder(p=.4),
+        Scribbles(p=0.4),
+        #BrightnessTexturize(p=.7),
+        PageBorder(p=.2),
         BindingsAndFasteners(foreground=get_foreground(), edge_offset=(0, 960 / 2),nscales = (0.5, 3),p=.4),
-        LightingGradient(p=0.9),
+        LightingGradient(p=0.6),
     ]
 )
 
@@ -84,8 +84,34 @@ def get_albu_pipeline():
               value=0,
               fill=0,
               fill_mask=random_color(),
-              p=1.0,
+              p=.6,
           ),
+          A.RGBShift(
+    r_shift_limit=[-20, 20],
+    g_shift_limit=[-20, 20],
+    b_shift_limit=[-20, 20], p=.8
+),
+A.ElasticTransform(
+    alpha=300,
+    sigma=10,
+    interpolation=cv2.INTER_LINEAR,
+    approximate=False,
+    same_dxdy=True,
+    mask_interpolation=cv2.INTER_NEAREST,
+    noise_distribution="gaussian",
+    keypoint_remapping_method="mask",
+    border_mode=cv2.BORDER_CONSTANT,
+    fill=0,
+    fill_mask=0,
+    p=.4
+),
+A.RandomCropFromBorders(
+    crop_left=0.1,
+    crop_right=0.1,
+    crop_top=0.1,
+    crop_bottom=0.1,
+    p=.3
+)
   ])
   return albumentations_pipeline
 
