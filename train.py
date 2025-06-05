@@ -155,6 +155,7 @@ def train(config):
         #strategy="ddp",
         accelerator="gpu",
         plugins=custom_ckpt,
+        limit_val_batches=config.get("limit_val_batches", 1.0),
         max_epochs=config.max_epochs,
         max_steps=config.max_steps,
         val_check_interval=config.val_check_interval,
