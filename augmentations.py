@@ -43,9 +43,9 @@ def get_random_pexels_image(query="texture", orientation="landscape", size=(720,
     img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
     return img
 
-def generate_stamps(stamp_amount = 40, output_dir = "/content/stamps"):
+def generate_stamps(stamp_amount = 40, output_dir = "/content/stamps", api_key= None):
     for i in range(stamp_amount):
-        img = get_random_pexels_image(query="grunge texture", size=(100, 100))
+        img = get_random_pexels_image(query="grunge texture", size=(100, 100),api_key=api_key)
         cv2.imwrite(f"{output_dir}/pexels_texture_{i}.jpg", img)
 
 def get_foreground():
