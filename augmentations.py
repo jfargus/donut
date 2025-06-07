@@ -1,4 +1,3 @@
-
 import albumentations as A
 import cv2
 import numpy as np
@@ -15,7 +14,10 @@ import cv2
 from PIL import Image as PILImage
 import os
 
-def get_random_pexels_image(query="texture", orientation="landscape", size=(720, 960),api_key=None):
+
+def get_random_pexels_image(
+    query="texture", orientation="landscape", size=(720, 960), api_key=None
+):
     headers = {"Authorization": api_key}
 
     # Get a random page of results (max 80 images per query)
@@ -44,78 +46,89 @@ def get_random_pexels_image(query="texture", orientation="landscape", size=(720,
     img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
     return img
 
-def generate_stamps(stamp_amount = 40, output_dir = "/content/stamps", api_key= None):
+
+def generate_stamps(stamp_amount=40, output_dir="/content/stamps", api_key=None):
     os.makedirs(output_dir, exist_ok=True)
     print(f"Generating {stamp_amount} random Pexels images in {output_dir}...")
     for i in range(stamp_amount):
-        img = get_random_pexels_image(query="grunge texture", size=(100, 100),api_key=api_key)
+        img = get_random_pexels_image(
+            query="grunge texture", size=(100, 100), api_key=api_key
+        )
         cv2.imwrite(f"{output_dir}/pexels_texture_{i}.jpg", img)
 
+
 def get_foreground():
-    int_foreground = random.randint(0,39)
+    int_foreground = random.randint(0, 39)
     return f"/content/stamps/pexels_texture_{int_foreground}.jpg"
+
 
 def random_color():
     return tuple(random.randint(0, 255) for _ in range(3))  # Full RGB range
 
-def get_aug():
-  augraphy_pipeline = AugraphyPipeline(
-    [
-        #PatternGenerator(p=0.3),
-        Scribbles(p=0.4),
-        #BrightnessTexturize(p=.7),
-        PageBorder(p=.2),
-        BindingsAndFasteners(foreground=get_foreground(), edge_offset=(0, 960 / 2),nscales = (0.5, 3),p=.4),
-        LightingGradient(p=0.6),
-    ]
-)
 
-  return augraphy_pipeline
+def get_aug():
+    augraphy_pipeline = AugraphyPipeline(
+        [
+            # PatternGenerator(p=0.3),
+            Scribbles(p=0.4),
+            # BrightnessTexturize(p=.7),
+            PageBorder(p=0.2),
+            BindingsAndFasteners(
+                foreground=get_foreground(),
+                edge_offset=(0, 960 / 2),
+                nscales=(0.5, 3),
+                p=0.4,
+            ),
+            LightingGradient(p=0.6),
+        ]
+    )
+
+    return augraphy_pipeline
+
 
 def get_albu_pipeline():
-  albumentations_pipeline = A.Compose([
-        A.Perspective(
-              scale=[0.05, 0.15],
-              keep_size=False,
-              fit_output=True,
-              interpolation=cv2.INTER_LINEAR,
-              mask_interpolation=cv2.INTER_NEAREST,
-              border_mode=cv2.BORDER_REFLECT_101 if random.random() > 0.5 else cv2.BORDER_CONSTANT,
-              value=0,
-              fill=0,
-              fill_mask=random_color(),
-              p=.6,
-          ),
-          A.RGBShift(
-    r_shift_limit=[-20, 20],
-    g_shift_limit=[-20, 20],
-    b_shift_limit=[-20, 20], p=.8
-),
-A.ElasticTransform(
-    alpha=300,
-    sigma=10,
-    interpolation=cv2.INTER_LINEAR,
-    approximate=False,
-    same_dxdy=True,
-    mask_interpolation=cv2.INTER_NEAREST,
-    noise_distribution="gaussian",
-    keypoint_remapping_method="mask",
-    border_mode=cv2.BORDER_CONSTANT,
-    fill=0,
-    fill_mask=0,
-    p=.4
-),
-A.RandomCropFromBorders(
-    crop_left=0.1,
-    crop_right=0.1,
-    crop_top=0.1,
-    crop_bottom=0.1,
-    p=.3
-)
-  ])
-  return albumentations_pipeline
+    albumentations_pipeline = A.Compose(
+        [
+            A.PadIfNeeded(
+                min_height="1200",
+                min_width="900",
+                position="random",
+                border_mode=cv2.BORDER_CONSTANT,
+                fill=random_color(),
+                fill_mask=0,
+                p=0.75,
+            ),
+            A.Perspective(
+                scale=[0.05, 0.1],
+                keep_size=False,
+                fit_output=False,
+                interpolation=cv2.INTER_LINEAR,
+                mask_interpolation=cv2.INTER_NEAREST,
+                border_mode=(
+                    cv2.BORDER_REFLECT_101
+                    if random.random() > 0.5
+                    else cv2.BORDER_CONSTANT
+                ),
+                value=0,
+                fill=random_color(),
+                fill_mask=0,
+                p=0.6,
+            ),
+            A.RGBShift(
+                r_shift_limit=[-20, 20],
+                g_shift_limit=[-20, 20],
+                b_shift_limit=[-20, 20],
+                p=0.8,
+            ),
+            A.RandomCropFromBorders(
+                crop_left=0.1, crop_right=0.1, crop_top=0.1, crop_bottom=0.1, p=0.3
+            ),
+        ]
+    )
+    return albumentations_pipeline
 
-  # === Combined augmentor ===
+    # === Combined augmentor ===
+
 
 def augment_example(example, apply_prob=0.5):
     img: PILImage.Image = example["image"]

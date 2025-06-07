@@ -33,6 +33,7 @@ class DonutModelPLModule(pl.LightningModule):
                 max_length=self.config.max_length,
                 align_long_axis=self.config.align_long_axis,
                 ignore_mismatched_sizes=True,
+                branch = self.config.get("pretrained_branch", "official"),
             )
         else:
             self.model = DonutModel(
