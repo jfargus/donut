@@ -70,7 +70,7 @@ def get_aug():
     augraphy_pipeline = AugraphyPipeline(
         [
             # PatternGenerator(p=0.3),
-            Scribbles(p=0.4),
+            Scribbles(p=0.3),
             # BrightnessTexturize(p=.7),
             #PageBorder(p=0.2),
             # BindingsAndFasteners(
@@ -79,7 +79,7 @@ def get_aug():
             #     nscales=(0.5, 3),
             #     p=0.4,
             # ),
-            LightingGradient(p=0.6),
+            LightingGradient(p=0.7),
         ]
     )
 
@@ -120,6 +120,10 @@ def get_albu_pipeline():
                 b_shift_limit=[-20, 20],
                 p=0.8,
             ),
+            A.Blur(
+            blur_limit=[1, 6],
+            p= .5
+            )
             # A.RandomCropFromBorders(
             #     crop_left=0.1, crop_right=0.1, crop_top=0.1, crop_bottom=0.1, p=0.3
             # ),
