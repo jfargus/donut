@@ -72,13 +72,13 @@ def get_aug():
             # PatternGenerator(p=0.3),
             Scribbles(p=0.4),
             # BrightnessTexturize(p=.7),
-            PageBorder(p=0.2),
-            BindingsAndFasteners(
-                foreground=get_foreground(),
-                edge_offset=(0, 960 / 2),
-                nscales=(0.5, 3),
-                p=0.4,
-            ),
+            #PageBorder(p=0.2),
+            # BindingsAndFasteners(
+            #     foreground=get_foreground(),
+            #     edge_offset=(0, 960 / 2),
+            #     nscales=(0.5, 3),
+            #     p=0.4,
+            # ),
             LightingGradient(p=0.6),
         ]
     )
@@ -89,40 +89,40 @@ def get_aug():
 def get_albu_pipeline():
     albumentations_pipeline = A.Compose(
         [
-            A.PadIfNeeded(
-                min_height="1200",
-                min_width="900",
-                position="random",
-                border_mode=cv2.BORDER_CONSTANT,
-                fill=random_color(),
-                fill_mask=0,
-                p=0.75,
-            ),
-            A.Perspective(
-                scale=[0.05, 0.1],
-                keep_size=False,
-                fit_output=False,
-                interpolation=cv2.INTER_LINEAR,
-                mask_interpolation=cv2.INTER_NEAREST,
-                border_mode=(
-                    cv2.BORDER_REFLECT_101
-                    if random.random() > 0.5
-                    else cv2.BORDER_CONSTANT
-                ),
-                value=0,
-                fill=random_color(),
-                fill_mask=0,
-                p=0.6,
-            ),
+            # A.PadIfNeeded(
+            #     min_height="1200",
+            #     min_width="900",
+            #     position="random",
+            #     border_mode=cv2.BORDER_CONSTANT,
+            #     fill=random_color(),
+            #     fill_mask=0,
+            #     p=0.75,
+            # ),
+            # A.Perspective(
+            #     scale=[0.05, 0.1],
+            #     keep_size=False,
+            #     fit_output=False,
+            #     interpolation=cv2.INTER_LINEAR,
+            #     mask_interpolation=cv2.INTER_NEAREST,
+            #     border_mode=(
+            #         cv2.BORDER_REFLECT_101
+            #         if random.random() > 0.5
+            #         else cv2.BORDER_CONSTANT
+            #     ),
+            #     value=0,
+            #     fill=random_color(),
+            #     fill_mask=0,
+            #     p=0.6,
+            # ),
             A.RGBShift(
                 r_shift_limit=[-20, 20],
                 g_shift_limit=[-20, 20],
                 b_shift_limit=[-20, 20],
                 p=0.8,
             ),
-            A.RandomCropFromBorders(
-                crop_left=0.1, crop_right=0.1, crop_top=0.1, crop_bottom=0.1, p=0.3
-            ),
+            # A.RandomCropFromBorders(
+            #     crop_left=0.1, crop_right=0.1, crop_top=0.1, crop_bottom=0.1, p=0.3
+            # ),
         ]
     )
     return albumentations_pipeline
@@ -130,24 +130,22 @@ def get_albu_pipeline():
     # === Combined augmentor ===
 
 
-def augment_example(example, apply_prob=0.5):
+def augment_example(example):
     img: PILImage.Image = example["image"]
 
-    # Apply augmentations only with a certain probability
-    if random.random() < apply_prob:
-        # Convert to NumPy for Albumentations
-        image_np = np.array(img)
+    # Convert to NumPy for Albumentations
+    image_np = np.array(img)
 
-        # Apply Albumentations
-        alt = get_albu_pipeline()
-        image_np = alt(image=image_np)["image"]
+    # Apply Albumentations
+    alt = get_albu_pipeline()
+    image_np = alt(image=image_np)["image"]
 
-        # Apply Augraphy
-        augraphy_pipeline = get_aug()
-        img_aug = augraphy_pipeline(image_np)
+    # Apply Augraphy
+    augraphy_pipeline = get_aug()
+    img_aug = augraphy_pipeline(image_np)
 
-        # Convert back to PIL
-        img_aug = PILImage.fromarray(img_aug)
-        example["image"] = img_aug
+    # Convert back to PIL
+    img_aug = PILImage.fromarray(img_aug)
+    example["image"] = img_aug
 
     return example
