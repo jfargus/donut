@@ -87,11 +87,13 @@ def get_aug():
 
 
 def get_albu_pipeline():
+    random_height = random.randint(1200, 1600)
+    random_width = int(random_height * 0.75)
     albumentations_pipeline = A.Compose(
         [
             A.PadIfNeeded(
-                min_height="1200",
-                min_width="900",
+                min_height=random_height,
+                min_width=random_width,
                 position="random",
                 border_mode=cv2.BORDER_CONSTANT,
                 fill=random_color(),
